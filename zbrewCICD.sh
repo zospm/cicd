@@ -32,7 +32,7 @@ function RepoStatus {
 		fi
 	else 
 		cd ../
-		git clone "${GIT_OWNER}@${GIT_SERVER}:IBMZSoftware/${repo}.git" >"${repo}_gitclone.results" 2>&1
+		git clone "${GIT_OWNER}@${GIT_SERVER}:${GIT_USER}/${repo}.git" >"${repo}_gitclone.results" 2>&1
 		cd ${repo}
 		echo "PULL"
 	fi
@@ -60,7 +60,7 @@ function RepoBuild {
 	log="build.log"
 	rm -f ${out}
 	touch ${out}
-	git pull "${GIT_OWNER}@${GIT_SERVER}:IBMZSoftware/${repo}.git" >"gitpull.results" 2>&1
+	git pull "${GIT_OWNER}@${GIT_SERVER}:${GIT_USER}/${repo}.git" >"gitpull.results" 2>&1
 	rc=$?
 	if [ ${rc} -ne 0 ]; then
 		echo "FAIL"
@@ -113,7 +113,7 @@ function RepoDeploy {
 	if [ ${rc} -ne 0 ]; then
 		StepMsg "FAIL" "Repository Deploy" "${repo}" "${rc}" "${out}" "${log}" 1
 	else 
-		artifact_url="https://na.artifactory.swg-devops.com/artifactory/webapp/#/artifacts/browse/tree/General/sys-mvsutils-${repo}-generic-local"
+		artifact_url="https://<download-loc>#/artifacts/browse/tree/General/sys-mvsutils-${repo}-generic-local"
 		rm -f ${out}
 		paxfile="${repo}_${timestamp}.pax"
 		( 
@@ -150,6 +150,7 @@ function RepoDeploy {
 #
 # Start of mainline 'loop forever'
 #
+set -x
 while true; do 
 	mkdir -p "${BUILD_ROOT}"
 	rc=$?
@@ -185,7 +186,7 @@ while true; do
 			fi
 		else
 			if [ ${status} = "PULL" ]; then 
-				hash=`git ls-remote -q "${GIT_OWNER}@${GIT_SERVER}:IBMZSoftware/${r}"  | awk ' { if ($2 == "HEAD") { print $1; }}'`
+				hash=`git ls-remote -q "${GIT_OWNER}@${GIT_SERVER}:${GIT_USER}/${r}"  | awk ' { if ($2 == "HEAD") { print $1; }}'`
 				echo "Build repository: ${r} (${hash})"
 				SlackMsg "${r}" "0" "Build started for git repository: ${r}" "" "${log}"         
 				status=`RepoBuild ${r}`
@@ -211,7 +212,7 @@ while true; do
 		fi
 		cd ../
 	done	
-
+return 0
 	sleep 5m
 
 done
