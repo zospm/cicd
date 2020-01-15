@@ -5,9 +5,11 @@
 export GIT_SERVER="github.com"
 export GIT_OWNER="git"
 export GIT_USER="mikefultonbluemix"
-export REPO_LIST="zbrew zbrew-zhw zbrew-eqa zbrew-igy zbrew-bgz"
+# order of the repos matters. zbrew requires zbrew-zhw to be installed to run tests
+export REPO_LIST="zbrew-zhw zbrew zbrew-eqa zbrew-igy zbrew-bgz"
 export DEPLOY_SERVER="api.bintray.com"
-export DEPLOY_REPO_PREFIX="content/fultonm/zbrew"
+export DEPLOY_USER="fultonm"
+export DEPLOY_REPO_PREFIX="content/fultonm/zbrew/"
 export DEPLOY_REPO_SUFFIX="/"
 export DEPLOY_USER="fultonm"
 export BUILD_ROOT="${HOME}/zbrew-build"

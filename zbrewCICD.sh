@@ -113,9 +113,9 @@ function RepoDeploy {
 	if [ ${rc} -ne 0 ]; then
 		StepMsg "FAIL" "Repository Deploy" "${repo}" "${rc}" "${out}" "${log}" 1
 	else 
-		artifact_url="https://<download-loc>#/artifacts/browse/tree/General/sys-mvsutils-${repo}-generic-local"
-		rm -f ${out}
 		paxfile="${repo}_${timestamp}.pax"
+		artifact_url="https://bintray.com/fultonm/${repo}/download_file?file_path=${paxfile}"
+		rm -f ${out}
 		( 
 		cd "${DEPLOY_ROOT}/${repo}"; 
 		files=`ls -A`
@@ -129,19 +129,19 @@ function RepoDeploy {
 		# Tagging binary is required so the file is not autoconverted on curl transfer
 		chtag -b "${DEPLOY_ROOT}/${paxfile}" 
 		urldir="${DEPLOY_SERVER}/${DEPLOY_REPO_PREFIX}${repo}${DEPLOY_REPO_SUFFIX}/${timestamp}"
-		curl -k -T "${DEPLOY_ROOT}/${paxfile}" -H "X-JFrog-Art-Api:${DEPLOY_API_KEY}" "https://${urldir}/${paxfile}" >>${out} 2>&1
+		curl -k -T "${DEPLOY_ROOT}/${paxfile}" -u${DEPLOY_USER}:${DEPLOY_API_KEY} -H "X-JFrog-Art-Api:${DEPLOY_API_KEY}" "https://${urldir}/${paxfile}" >>${out} 2>&1
 		rc=$?
 		if [ ${rc} -gt 0 ]; then
 			echo "Unable to transfer pax file: ${DEPLOY_ROOT}/${paxfile} to: ${urldir}/${paxfile}" >>${out}
 			return ${rc}
 		fi
-		curl -k -X POST -H "X-JFrog-Art-Api:${DEPLOY_API_KEY}" "https://${urldir}/publish" >>${out} 2>&1
+		curl -k -X POST -u${DEPLOY_USER}:${DEPLOY_API_KEY} -H "X-JFrog-Art-Api:${DEPLOY_API_KEY}" "https://${urldir}/publish" >>${out} 2>&1
 		rc=$?
 		if [ ${rc} -gt 0 ]; then
 			echo "Unable to publish pax file: ${urldir}/${paxfile}" >>${out}
 			return ${rc}
 		fi
-		StepMsg "PASS" "Repository ${repo} deploy git commit hash: ${hash} as ${artifact_url}/${timestamp}/${repo}_${timestamp}.pax " "${repo}" "${rc}" "${out}" "${log}" 1
+		StepMsg "PASS" "Repository ${repo} deploy git commit hash: ${hash} as ${artifact_url} " "${repo}" "${rc}" "${out}" "${log}" 1
 
 	fi
 	return 0
@@ -150,7 +150,6 @@ function RepoDeploy {
 #
 # Start of mainline 'loop forever'
 #
-set -x
 while true; do 
 	mkdir -p "${BUILD_ROOT}"
 	rc=$?
@@ -212,7 +211,6 @@ while true; do
 		fi
 		cd ../
 	done	
-return 0
 	sleep 5m
 
 done
