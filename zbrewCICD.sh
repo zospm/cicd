@@ -114,7 +114,7 @@ function RepoDeploy {
 		StepMsg "FAIL" "Repository Deploy" "${repo}" "${rc}" "${out}" "${log}" 1
 	else 
 		paxfile="${repo}_${timestamp}.pax"
-		artifact_url="https://bintray.com/fultonm/${repo}/download_file?file_path=${paxfile}"
+		artifact_url="https://bintray.com/fultonm/zbrew/download_file?file_path=${paxfile}"
 		rm -f ${out}
 		( 
 		cd "${DEPLOY_ROOT}/${repo}"; 
