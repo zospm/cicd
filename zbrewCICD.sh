@@ -174,16 +174,26 @@ function RepoDownload {
 	        echo "Unable to unpax : ${DOWNLOAD_ROOT}/${repo}/${paxfile}" >>${out}
 	        return ${rc}
 	fi
-	DOWNLOAD_ZBREW="../../zbrew/bin/zbrew"
+	DOWNLOAD_ZBREW="../zbrew/bin/zbrew"
 	if [ "${repo}" = "zbrew" ]; then
 		echo "Warning: zbrew itself is not tested directly in download testing" >>${out}
+		StepMsg "PASS" "Download Test" "${repo}" "${rc}" "${out}" "${log}" ${verbose}
 		return 0
 	else
 		if [ -f ${DOWNLOAD_ZBREW} ]; then
-			prods=`${DOWNLOAD_ZBREW} search ${repo} | awk '{ print $1; }'`
+			suffix=${repo##*-} 
+			prods=`${DOWNLOAD_ZBREW} search ${suffix} | awk '{ print $1; }'`
 			# msf - hack...
 			export CEE240_CSI='MVS.GLOBAL.CSI'
-			export ZBREW_HLQ='ZBRDL'
+			export ZBREW_HLQ='ZBRDL.'
+			export ZFSROOT='/zbrdl/'
+
+			# forcibly remove previous builds
+			zfs=`df | grep ${ZFSROOT} | sort -r | awk ' { print $1; }'` 
+			for z in $zfs; do
+				unmount  $z
+			done
+			drm -f "${ZBREW_HLQ}*"
 			for prod in ${prods}; do
 				${DOWNLOAD_ZBREW} install ${prod}
 				if [ $rc -gt 0 ]; then
