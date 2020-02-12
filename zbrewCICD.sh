@@ -282,7 +282,7 @@ while true; do
 			continue
 		fi
 
-		paxfile="${repo}_${timestamp}.pax"
+		paxfile="${r}_${timestamp}.pax"
 		artifact_url="https://dl.bintray.com/fultonm/zbrew/${paxfile}"
 		status=`RepoDeploy ${r} ${timestamp} ${hash} ${paxfile} ${artifact_url}`
 		if [ rc -gt 0 ]; then
