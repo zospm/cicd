@@ -14,6 +14,7 @@ export DEPLOY_REPO_SUFFIX="/"
 export DEPLOY_USER="fultonm"
 export BUILD_ROOT="${HOME}/zbrew-build"
 export DEPLOY_ROOT="${HOME}/zbrew-deploy"
+export DOWNLOAD_ROOT="${HOME}/zbrew-download"
 
 if [ -z "${DEPLOY_API_KEY}" ]; then
         echo "Need to export DEPLOY_API_KEY to deploy to ${DEPLOY_SERVER}"

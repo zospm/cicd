@@ -101,6 +101,8 @@ function RepoDeploy {
 	repo=$1
 	timestamp=$2
 	hash=$3
+	paxfile=$4
+	artifact_url=$5
 	rm -rf "${DEPLOY_ROOT}/${repo}"
 	mkdir -p "${DEPLOY_ROOT}/${repo}"
 	rc=$?
@@ -113,8 +115,6 @@ function RepoDeploy {
 	if [ ${rc} -ne 0 ]; then
 		StepMsg "FAIL" "Repository Deploy" "${repo}" "${rc}" "${out}" "${log}" 1
 	else 
-		paxfile="${repo}_${timestamp}.pax"
-		artifact_url="https://bintray.com/fultonm/zbrew/download_file?file_path=${paxfile}"
 		rm -f ${out}
 		( 
 		cd "${DEPLOY_ROOT}/${repo}"; 
@@ -142,9 +142,67 @@ function RepoDeploy {
 			return ${rc}
 		fi
 		StepMsg "PASS" "Repository ${repo} deploy git commit hash: ${hash} as ${artifact_url} " "${repo}" "${rc}" "${out}" "${log}" 1
-
 	fi
 	return 0
+}
+
+function RepoDownload {
+	out="RepoDownload.results"
+	log="curl_download.log"
+	rm -f ${out}
+	touch ${out}
+	repo=$1
+        paxfile=$2
+ 	artifact_url=$3
+	rm -rf "${DOWNLOAD_ROOT}/${repo}"
+        mkdir -p "${DOWNLOAD_ROOT}/${repo}"
+	rc=$?
+        if [ ${rc} -gt 0 ]; then
+	        echo "Unable to create deploy directory: ${DOWNLOAD_ROOT}/${repo}" >>${out}
+	        return ${rc}
+	fi
+	cd "${DOWNLOAD_ROOT}/${repo}"
+	curl -k -u${DEPLOY_USER}:${DEPLOY_API_KEY} ${artifact_url} -o ${paxfile} >${log} 2>&1
+	rc=$?
+        if [ ${rc} -gt 0 ]; then
+	        echo "Unable to download : ${DOWNLOAD_ROOT}/${repo}/${paxfile}" >>${out}
+	        return ${rc}
+	fi
+	pax -rf ${paxfile} >>${out}
+	rc=$?
+        if [ ${rc} -gt 0 ]; then
+	        echo "Unable to unpax : ${DOWNLOAD_ROOT}/${repo}/${paxfile}" >>${out}
+	        return ${rc}
+	fi
+	DOWNLOAD_ZBREW="../../zbrew/bin/zbrew"
+	if [ "${repo}" = "zbrew" ]; then
+		echo "Warning: zbrew itself is not tested directly in download testing" >>${out}
+		return 0
+	else
+		if [ -f ${DOWNLOAD_ZBREW} ]; then
+			prods=`${DOWNLOAD_ZBREW} search ${repo} | awk '{ print $1; }'`
+			# msf - hack...
+			export CEE240_CSI='MVS.GLOBAL.CSI'
+			export ZBREW_HLQ='ZBRDL'
+			for prod in ${prods}; do
+				${DOWNLOAD_ZBREW} install ${prod}
+				if [ $rc -gt 0 ]; then
+					echo "Failed to install ${prod} from download" >>${out}
+					return $rc
+				fi
+				${DOWNLOAD_ZBREW} configure ${prod}
+				if [ $rc -gt 0 ]; then
+					echo "Failed to configure ${prod} from download" >>${out}
+					return $rc
+				fi
+			done
+		else
+			echo "Warning... zbrew does not exist yet so download testing skipped for ${repo}" >>${out}
+		fi
+	fi
+	StepMsg "PASS" "Download Test" "${repo}" "${rc}" "${out}" "${log}" ${verbose}
+	return 0
+
 }
 
 #
@@ -193,9 +251,18 @@ while true; do
 					status=`RepoTest ${r}`
 					if [ ${status} = "PASS" ]; then
 						echo "Repository ${r} test passed"
-						status=`RepoDeploy ${r} ${timestamp} ${hash}`
+						paxfile="${repo}_${timestamp}.pax"
+						artifact_url="https://dl.bintray.com/fultonm/zbrew/${paxfile}"
+						status=`RepoDeploy ${r} ${timestamp} ${hash} ${paxfile} ${artifact_url}`
 						if [ "${status}" = "PASS" ]; then
 							echo "Repository ${r} deployment passed"
+							status=`RepoDownload ${r} ${paxfile} ${artifact_url}`
+							if [ "${status}" = "PASS" ]; then
+								echo "Download of ${r} test passed"
+							else
+								echo "Download of ${r} test failed"
+							fi
+					
 						else
 							echo "Repository ${r} deployment failed"
 						fi
@@ -210,7 +277,6 @@ while true; do
 			fi
 		fi
 		cd ../
-	done	
+	done
 	sleep 5m
-
 done
