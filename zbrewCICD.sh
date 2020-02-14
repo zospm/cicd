@@ -2,7 +2,7 @@
 . ./setenv.sh
 #set -x
 
-verbose=0
+verbose=false
 
 function SlackMsg {
 	msg=$1
@@ -192,6 +192,9 @@ function RepoDownload {
 			export ZFSROOT='/zbrdl/'
 
 			for prod in ${prods}; do
+				if ${verbose}; then
+					SlackMsg "uninstall, install, configure ${prod}"
+				fi
 				# remove previous download builds
 				${DOWNLOAD_ZBREW} uninstall ${prod} >"${out}" 2>&1
 				if [ $rc -gt 0 ]; then
@@ -255,9 +258,6 @@ while true; do
 	
 		log="cicd.log"
 		if [ ${status} = "CURRENT" ]; then
-			if [ ${verbose} -eq 1 ]; then
-				echo "Repository: ${r} current";
-			fi
 			continue
 		fi
 		if [ ${status} != "PULL" ]; then 
