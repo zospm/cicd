@@ -283,7 +283,7 @@ while true; do
 		fi
 
 		paxfile="${r}_${timestamp}.pax"
-		artifact_url="https://dl.bintray.com/fultonm/zbrew/${paxfile}"
+		artifact_url="https://dl.bintray.com/${DEPLOY_USER}/zbrew/${paxfile}"
 		status=`RepoDeploy ${r} ${timestamp} ${hash} ${paxfile} ${artifact_url}`
 		if [ rc -gt 0 ]; then
 			SlackMsg "${status}"
