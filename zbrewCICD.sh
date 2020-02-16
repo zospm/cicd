@@ -50,6 +50,9 @@ function RepoBuild {
 	gitout=gitpull.out
 	out="RepoBuild.results"
 
+	if ${verbose}; then
+		SlackMsg "RepoBuild ${repo}"
+	fi
 	git pull "${GIT_OWNER}@${GIT_SERVER}:${GIT_USER}/${repo}.git" >"${gitout}" 2>&1
 	rc=$?
 	if [ ${rc} -ne 0 ]; then
@@ -67,11 +70,13 @@ function RepoBuild {
 	return $rc
 }
 
-
 function RepoTest {
 	repo=$1
 	out="RepoTest.results"
 
+	if ${verbose}; then
+		SlackMsg "RepoTest ${repo}"
+	fi
 	./test.sh >${out} 2>&1
 	rc=$?
 	if [ ${rc} -ne 0 ]; then
@@ -89,6 +94,9 @@ function RepoDeploy {
 	paxfile=$4
 	artifact_url=$5
 
+	if ${verbose}; then
+		SlackMsg "RepoDeploy ${repo}"
+	fi
 	out="RepoDeploy.results"
 	curlout="curl.out"
 	rm -rf "${DEPLOY_ROOT}/${repo}"
@@ -124,24 +132,43 @@ function RepoDeploy {
 
 	# Tagging binary is required so the file is not autoconverted on curl transfer
 	chtag -b "${DEPLOY_ROOT}/${paxfile}" 
-	urldir="${DEPLOY_SERVER}/${DEPLOY_REPO_PREFIX}${repo}${DEPLOY_REPO_SUFFIX}/${timestamp}"
-	curl -ks -T "${DEPLOY_ROOT}/${paxfile}" -u${DEPLOY_USER}:${DEPLOY_API_KEY} -H "X-JFrog-Art-Api:${DEPLOY_API_KEY}" "https://${urldir}/${paxfile}" >${curlout} 2>&1
+	urldir="${DEPLOY_SERVER}/${DEPLOY_REPO_PREFIX}${repo}${DEPLOY_REPO_SUFFIX}${timestamp}"
+
+	if ${verbose}; then
+		SlackMsg "RepoDeploy: curl -I -s -k -T ${DEPLOY_ROOT}/${paxfile} -u${DEPLOY_USER}:${DEPLOY_API_KEY} -H X-JFrog-Art-Api:${DEPLOY_API_KEY} https://${urldir}/${paxfile}"
+	fi
+
+	curl -I -s -k -T "${DEPLOY_ROOT}/${paxfile}" -u${DEPLOY_USER}:${DEPLOY_API_KEY} -H "X-JFrog-Art-Api:${DEPLOY_API_KEY}" "https://${urldir}/${paxfile}" >${curlout} 2>&1
 	rc=$?
 	if [ ${rc} -gt 0 ]; then
 		echo "RepoDeploy: Unable to transfer pax file: ${DEPLOY_ROOT}/${paxfile} to: ${urldir}/${paxfile}. rc:$rc"
 		return ${rc}
 	else
-		rm -f ${DEPLOY_ROOT}/${paxfile}
-		rm -f "${curlout}"
+		grep "HTTP/1.1" ${curlout} | grep -q '201'
+		rc=$?
+		if [ ${rc} -gt 0 ]; then
+			echo "RepoDeploy: Unexpected HTTP Error Uploading pax file to ${urldir}/${paxfile}."    
+			return $rc
+		else
+			rm -f ${DEPLOY_ROOT}/${paxfile}
+			rm -f "${curlout}"
+		fi
 	fi
 
-	curl -ks -X POST -u${DEPLOY_USER}:${DEPLOY_API_KEY} -H "X-JFrog-Art-Api:${DEPLOY_API_KEY}" "https://${urldir}/publish" >${curlout} 2>&1
+	curl -I -s -k -X POST -u${DEPLOY_USER}:${DEPLOY_API_KEY} -H "X-JFrog-Art-Api:${DEPLOY_API_KEY}" "https://${urldir}/publish" >${curlout} 2>&1
 	rc=$?
 	if [ ${rc} -gt 0 ]; then
 		echo "RepoDeploy: Unable to publish pax file: ${urldir}/${paxfile}"
 		return ${rc}
 	else
-		rm -f "${curlout}"
+		grep "HTTP/1.1" ${curlout} | grep -q '200'
+		rc=$?
+		if [ ${rc} -gt 0 ]; then
+			echo "RepoDeploy: Unexpected HTTP Error publishing pax file to ${urldir}/${paxfile}."   	
+			return $rc
+		else	
+			rm -f "${curlout}"
+		fi
 	fi
 	return 0
 }
@@ -155,6 +182,9 @@ function RepoDownload {
 	paxout="pax.out"
 	out="RepoDownload.out"
 	
+	if ${verbose}; then
+		SlackMsg "RepoDownload ${repo}"
+	fi
 	rm -rf "${DOWNLOAD_ROOT}/${repo}"
         mkdir -p "${DOWNLOAD_ROOT}/${repo}"
 	rc=$?
@@ -270,28 +300,30 @@ while true; do
 
 		status=`RepoBuild ${r}`
 		rc=$?
-		if [ rc -gt 0 ]; then
+		if [ $rc -gt 0 ]; then
 			SlackMsg "${status}"
 			continue
 		fi
 		
 		status=`RepoTest ${r}`
 		rc=$?
-		if [ rc -gt 0 ]; then
+		if [ $rc -gt 0 ]; then
 			SlackMsg "${status}"
 			continue
 		fi
 
 		paxfile="${r}_${timestamp}.pax"
-		artifact_url="https://dl.bintray.com/${DEPLOY_USER}/zbrew/${paxfile}"
+		artifact_url="https://dl.bintray.com/zbrew/zbrew/${paxfile}"
 		status=`RepoDeploy ${r} ${timestamp} ${hash} ${paxfile} ${artifact_url}`
-		if [ rc -gt 0 ]; then
+		rc=$?
+		if [ $rc -gt 0 ]; then
 			SlackMsg "${status}"
 			continue
 		fi
 
 		status=`RepoDownload ${r} ${paxfile} ${artifact_url}`
-		if [ rc -gt 0 ]; then
+		rc=$?
+		if [ $rc -gt 0 ]; then
 			SlackMsg "${status}"
 		else
 			SlackMsg "Build, test, deploy, download of ${r} passed. Code deployed to: ${artifact_url}"
