@@ -208,6 +208,7 @@ function RepoDownload {
 	        return ${rc}
 	else
 		rm -f "${paxout}"
+		rm -f "${paxfile}"
 	fi
 	DOWNLOAD_ZBREW="../zbrew/bin/zbrew"
 	if [ "${repo}" = "zbrew" ]; then
