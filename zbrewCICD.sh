@@ -248,20 +248,6 @@ function RepoDownload {
 					echo "RepoDownload: Failed to install ${prod} from download. rc:$rc"
 					return $rc
 				fi
-				if [ "${prod}" = "ZHW110" ]; then
-					zbrew smpreceiveptf zhw110 'ZBREW.ZHWZ110.MCSPTF2'
-					rc=$?
-					if [ $rc -gt 0 ]; then
-						echo "RepoDownload: receive ptf for zhw110 failed"
-						return $rc
-					fi
-					zbrew update zhw110
-					rc=$?
-					if [ $rc -gt 0 ]; then
-						echo "RepoDownload: update ptf for zhw110 failed"
-						return $rc
-					fi
-				fi
 
 				zbrew configure ${prod} >"${out}" 2>&1
 				rc=$?
