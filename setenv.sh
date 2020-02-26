@@ -5,8 +5,7 @@
 export GIT_SERVER="github.com"
 export GIT_OWNER="git"
 export GIT_USER="zbrewdev"
-# order of the repos matters. zbrew requires zbrew-zhw to be installed to run tests
-export REPO_LIST="zbrew-zhw zbrew zbrew-eqa zbrew-igy zbrew-bgz zbrew-fek"
+export REPO_LIST="zbrew zbrew-zhw zbrew-eqa zbrew-igy zbrew-bgz zbrew-fek"
 export DEPLOY_SERVER="api.bintray.com"
 export DEPLOY_USER="fultonm"
 export DEPLOY_REPO_PREFIX="content/zbrew/zbrew/"
@@ -25,4 +24,5 @@ fi
 mkdir -p "${BUILD_ROOT}"
 mkdir -p "${DEPLOY_ROOT}"
 
-export PATH="${BUILD_ROOT}/zbrew/bin:${PATH}"
+export BASE_PATH=".:/usr/bin:/bin:/usr/sbin:/rsusr/zoau/bin:/rsusr/ported/bin:/rsusr/rocket/bin"
+export PATH="${BUILD_ROOT}/zbrew/bin:${BASE_PATH}"

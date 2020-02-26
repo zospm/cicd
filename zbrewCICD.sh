@@ -210,38 +210,66 @@ function RepoDownload {
 		rm -f "${paxout}"
 		rm -f "${paxfile}"
 	fi
-	DOWNLOAD_ZBREW="../zbrew/bin/zbrew"
+
+	export PATH="${BASE_PATH}:${DOWNLOAD_ROOT}/zbrew/bin"
+	DOWNLOAD_ZBREW="${DOWNLOAD_ROOT}/zbrew/bin/zbrew"
 	if [ "${repo}" = "zbrew" ]; then
-		return 0
+		expected="ZHW110 1234-AB5 ZBREW Hello World Unit Test Software V1.1"
+		result=`zbrew search zhw`
+		if [ "${result}" != "${expected}" ]; then
+			echo "RepoDownload: zbrew failed to run search for zhw. Results: ${result}"
+			return 16
+		else
+			return 0
+		fi
 	else
 		if [ -f ${DOWNLOAD_ZBREW} ]; then
 			suffix=${repo##*-} 
-			prods=`${DOWNLOAD_ZBREW} search ${suffix} | awk '{ print $1; }'`
+			prods=`zbrew search ${suffix} | awk '{ print $1; }'`
 			# msf - hack...
-			export CEE240_CSI='MVS.GLOBAL.CSI'
+			export ZBREW_CEE240_CSI='MVS.GLOBAL.CSI'
 			export ZBREW_HLQ='ZBRDL.'
-			export ZFSROOT='/zbrdl/'
+			export ZBREW_ZFSROOT='/zbrdl/'
 
 			for prod in ${prods}; do
 				if ${verbose}; then
 					SlackMsg "uninstall, install, configure ${prod}"
 				fi
 				# remove previous download builds
-				${DOWNLOAD_ZBREW} uninstall ${prod} >"${out}" 2>&1
+				zbrew uninstall ${prod} >"${out}" 2>&1
+				rc=$?
 				if [ $rc -gt 0 ]; then
 					echo "RepoDownload: Failed to uninstall ${prod} from download. rc:$rc" 
 					return $rc
 				fi
-				${DOWNLOAD_ZBREW} install ${prod} >"${out}" 2>&1
+				zbrew install ${prod} >"${out}" 2>&1
+				rc=$?
 				if [ $rc -gt 0 ]; then
 					echo "RepoDownload: Failed to install ${prod} from download. rc:$rc"
 					return $rc
 				fi
-				${DOWNLOAD_ZBREW} configure ${prod} >"${out}" 2>&1
+				if [ "${prod}" = "ZHW110" ]; then
+					zbrew smpreceiveptf zhw110 'ZBREW.ZHWZ110.MCSPTF2'
+					rc=$?
+					if [ $rc -gt 0 ]; then
+						echo "RepoDownload: receive ptf for zhw110 failed"
+						return $rc
+					fi
+					zbrew update zhw110
+					rc=$?
+					if [ $rc -gt 0 ]; then
+						echo "RepoDownload: update ptf for zhw110 failed"
+						return $rc
+					fi
+				fi
+
+				zbrew configure ${prod} >"${out}" 2>&1
+				rc=$?
 				if [ $rc -gt 0 ]; then
 					echo "RepoDownload: Failed to configure ${prod} from download. rc:$rc" 
 					return $rc
 				fi
+				zbrew uninstall ${prod} >"${out}" 2>&1
 			done
 			rm -f "${out}"
 		fi
@@ -251,6 +279,8 @@ function RepoDownload {
 
 #
 # Start of mainline 'loop forever'
+# The loop builds everything first and then proceeds to test, deploy, download anything it built.
+# This two-step approach is required because zbrew and zbrew-zhw have dependencies on each other.
 #
 first=true
 while true; do 
@@ -276,7 +306,9 @@ while true; do
 
 	cd "${BUILD_ROOT}"
 	timestamp=`date '+%Y%m%d%H%M'`
-	
+
+	rc=0	
+	builtrepos=''
 	for r in ${REPO_LIST}; do
 		mkdir -p "${BUILD_ROOT}/${r}"
 		rc=$?
@@ -305,7 +337,16 @@ while true; do
 			SlackMsg "${status}"
 			continue
 		fi
-		
+		builtrepos="${builtrepos} ${r}"
+	done
+	if [ $rc -gt 0 ]; then 
+		continue;
+	fi
+	
+	for r in ${builtrepos}; do
+		cd "${BUILD_ROOT}/${r}"
+		SlackMsg "Test started for git repository: ${r}"
+
 		status=`RepoTest ${r}`
 		rc=$?
 		if [ $rc -gt 0 ]; then
