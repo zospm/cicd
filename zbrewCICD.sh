@@ -227,9 +227,6 @@ function RepoDownload {
 			suffix=${repo##*-} 
 			prods=`zbrew search ${suffix} | awk '{ print $1; }'`
 			# msf - hack...
-			export ZBREW_CEE240_CSI='MVS.GLOBAL.CSI'
-			export ZBREW_HLQ='ZBRDL.'
-			export ZBREW_ZFSROOT='/zbrdl/'
 
 			for prod in ${prods}; do
 				if ${verbose}; then

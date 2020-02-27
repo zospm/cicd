@@ -13,6 +13,10 @@ export DEPLOY_REPO_SUFFIX="/"
 export BUILD_ROOT="${HOME}/zbrew-build"
 export DEPLOY_ROOT="${HOME}/zbrew-deploy"
 export DOWNLOAD_ROOT="${HOME}/zbrew-download"
+export ZBREW_ZOS240_CSI='MVS.GLOBAL.CSI'
+export ZBREW_CEE240_CSI='MVS.GLOBAL.CSI'
+export ZBREW_HLQ='ZBRDL.'
+export ZBREW_ZFSROOT='/zbrdl/'
 
 if [ -z "${DEPLOY_API_KEY}" ]; then
         echo "Need to export DEPLOY_API_KEY to deploy to ${DEPLOY_SERVER}"
