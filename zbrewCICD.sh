@@ -242,8 +242,18 @@ function RepoDownload {
 				zbrew install ${prod} >"${out}" 2>&1
 				rc=$?
 				if [ $rc -gt 0 ]; then
-					echo "RepoDownload: Failed to install ${prod} from download. rc:$rc"
-					return $rc
+					if [ $rc -eq 4 ]; then
+						zbrew -r smpapply install ${prod} >>"$out" 2>&1
+						rc=$?
+						if ! [ $rc -gt 4 ]; then
+							zbrew update ${prod} >>"$out" 2>&1
+							rc=$?
+						fi
+					fi
+					if [ $rc -gt 0 ]; then
+						echo "RepoDownload: Failed to install/update ${prod} from download. rc:$rc"
+						return $rc
+					fi
 				fi
 
 				zbrew configure ${prod} >"${out}" 2>&1
