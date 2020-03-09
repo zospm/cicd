@@ -5,7 +5,7 @@
 export GIT_SERVER="github.com"
 export GIT_OWNER="git"
 export GIT_USER="zbrewdev"
-export REPO_LIST="zbrew zbrew-zhw zbrew-eqa zbrew-igy zbrew-bgz zbrew-fek"
+export REPO_LIST="zbrew zbrew-zhw zbrew-eqa zbrew-igy zbrew-bgz zbrew-fek zbrew-git zbrew-fel"
 export DEPLOY_SERVER="api.bintray.com"
 export DEPLOY_USER="fultonm"
 export DEPLOY_REPO_PREFIX="content/zbrew/zbrew/"

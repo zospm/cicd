@@ -252,6 +252,12 @@ function RepoDownload {
 					echo "RepoDownload: Failed to configure ${prod} from download. rc:$rc" 
 					return $rc
 				fi
+				zbrew deconfigure ${prod} >"${out}" 2>&1
+				rc=$?
+				if [ $rc -gt 0 ]; then
+					echo "RepoDownload: Failed to deconfigure ${prod} from download. rc:$rc" 
+					return $rc
+				fi
 				zbrew uninstall ${prod} >"${out}" 2>&1
 			done
 			rm -f "${out}"
