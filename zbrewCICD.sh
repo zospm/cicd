@@ -243,12 +243,10 @@ function RepoDownload {
 				rc=$?
 				if [ $rc -gt 0 ]; then
 					if [ $rc -eq 4 ]; then
-						zbrew -r smpapply install ${prod} >>"$out" 2>&1
+						SlackMsg "RepoDownload: Warning install/update ${prod} from download. rc:$rc"
+						SlackMsg "              Attempting reinstall using -f"
+						zbrew -cf install ${prod} >>"$out" 2>&1
 						rc=$?
-						if ! [ $rc -gt 4 ]; then
-							zbrew update ${prod} >>"$out" 2>&1
-							rc=$?
-						fi
 					fi
 					if [ $rc -gt 0 ]; then
 						echo "RepoDownload: Failed to install/update ${prod} from download. rc:$rc"
