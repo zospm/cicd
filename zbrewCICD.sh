@@ -33,7 +33,7 @@ function RepoStatus {
 		else
 		    echo "PULL"
 		fi
-	else 
+	else
 		cd ../
 		git clone "${GIT_OWNER}@${GIT_SERVER}:${GIT_USER}/${repo}.git" >"${gitout}" 2>&1
 		if [ $? -eq 0 ]; then
@@ -114,24 +114,24 @@ function RepoDeploy {
 		return ${rc}
 	else
 		rm -f ${out}
-	fi 
+	fi
 
 	paxout="${DEPLOY_ROOT}/${repo}_pax.out"
-	( 
-	cd "${DEPLOY_ROOT}/${repo}"; 
+	(
+	cd "${DEPLOY_ROOT}/${repo}";
 	files=`ls -A`
 	pax -x pax -wvf "${DEPLOY_ROOT}/${paxfile}" ${files} >"${paxout}" 2>&1
 	)
 	rc=$?
 	if [ ${rc} -gt 0 ]; then
-		echo "RepoDeploy: Unable to create pax file: ${DEPLOY_ROOT}/${paxfile}. rc:$rc" 
+		echo "RepoDeploy: Unable to create pax file: ${DEPLOY_ROOT}/${paxfile}. rc:$rc"
 		return ${rc}
-	else 
+	else
 		rm -f "${paxout}"	
 	fi
 
 	# Tagging binary is required so the file is not autoconverted on curl transfer
-	chtag -b "${DEPLOY_ROOT}/${paxfile}" 
+	chtag -b "${DEPLOY_ROOT}/${paxfile}"
 	urldir="${DEPLOY_SERVER}/${DEPLOY_REPO_PREFIX}${repo}${DEPLOY_REPO_SUFFIX}${timestamp}"
 
 	if ${verbose}; then
@@ -147,7 +147,7 @@ function RepoDeploy {
 		grep "HTTP/1.1" ${curlout} | grep -q '201'
 		rc=$?
 		if [ ${rc} -gt 0 ]; then
-			echo "RepoDeploy: Unexpected HTTP Error Uploading pax file to ${urldir}/${paxfile}."    
+			echo "RepoDeploy: Unexpected HTTP Error Uploading pax file to ${urldir}/${paxfile}."
 			return $rc
 		else
 			rm -f ${DEPLOY_ROOT}/${paxfile}
@@ -211,7 +211,6 @@ function RepoDownload {
 		rm -f "${paxfile}"
 	fi
 
-	export PATH="${BASE_PATH}:${DOWNLOAD_ROOT}/zbrew/bin"
 	DOWNLOAD_ZBREW="${DOWNLOAD_ROOT}/zbrew/bin/zbrew"
 	if [ "${repo}" = "zbrew" ]; then
 		expected="ZHW110 1234-AB5 ZBREW Hello World Unit Test Software V1.1"
@@ -224,9 +223,8 @@ function RepoDownload {
 		fi
 	else
 		if [ -f ${DOWNLOAD_ZBREW} ]; then
-			suffix=${repo##*-} 
+			suffix=${repo##*-}
 			prods=`zbrew search ${suffix} | awk '{ print $1; }'`
-			# msf - hack...
 
 			for prod in ${prods}; do
 				if ${verbose}; then
@@ -236,19 +234,17 @@ function RepoDownload {
 				zbrew uninstall ${prod} >"${out}" 2>&1
 				rc=$?
 				if [ $rc -gt 0 ]; then
-					echo "RepoDownload: Failed to uninstall ${prod} from download. rc:$rc" 
+					echo "RepoDownload: Failed to uninstall ${prod} from download. rc:$rc"
 					return $rc
 				fi
 				zbrew install ${prod} >"${out}" 2>&1
 				rc=$?
 				if [ $rc -gt 0 ]; then
 					if [ $rc -eq 4 ]; then
-						zbrew -r smpapply install ${prod} >>"$out" 2>&1
+						SlackMsg "RepoDownload: Warning for install/update ${prod} from download. rc:$rc"
+						SlackMsg "RepoDownload: Attempting re-install with -f"
+						zbrew -cf install ${prod} >>"$out" 2>&1
 						rc=$?
-						if ! [ $rc -gt 4 ]; then
-							zbrew update ${prod} >>"$out" 2>&1
-							rc=$?
-						fi
 					fi
 					if [ $rc -gt 0 ]; then
 						echo "RepoDownload: Failed to install/update ${prod} from download. rc:$rc"
@@ -259,13 +255,13 @@ function RepoDownload {
 				zbrew configure ${prod} >"${out}" 2>&1
 				rc=$?
 				if [ $rc -gt 0 ]; then
-					echo "RepoDownload: Failed to configure ${prod} from download. rc:$rc" 
+					echo "RepoDownload: Failed to configure ${prod} from download. rc:$rc"
 					return $rc
 				fi
 				zbrew deconfigure ${prod} >"${out}" 2>&1
 				rc=$?
 				if [ $rc -gt 0 ]; then
-					echo "RepoDownload: Failed to deconfigure ${prod} from download. rc:$rc" 
+					echo "RepoDownload: Failed to deconfigure ${prod} from download. rc:$rc"
 					return $rc
 				fi
 				zbrew uninstall ${prod} >"${out}" 2>&1
@@ -282,9 +278,9 @@ function RepoDownload {
 # This two-step approach is required because zbrew and zbrew-zhw have dependencies on each other.
 #
 first=true
-while true; do 
+while true; do
 	
-	if $first; then     
+	if $first; then
 		first=false
 	else
 		sleep 5m
@@ -306,6 +302,11 @@ while true; do
 	cd "${BUILD_ROOT}"
 	timestamp=`date '+%Y%m%d%H%M'`
 
+	export ZBREW_HLQ="${ZBREW_BUILD_HLQ}"
+	export ZBREW_ZFSROOT="${ZBREW_BUILD_ZFSROOT}"
+	export ZBREW_WORKROOT="${ZBREW_BUILD_WORKROOT}"
+	export PATH="${BASE_PATH}:${BUILD_ROOT}/zbrew/bin"
+
 	rc=0	
 	builtrepos=''
 	for r in ${REPO_LIST}; do
@@ -322,7 +323,7 @@ while true; do
 		if [ ${status} = "CURRENT" ]; then
 			continue
 		fi
-		if [ ${status} != "PULL" ]; then 
+		if [ ${status} != "PULL" ]; then
 			echo "Repository ${r} is out of sync. Investigate!"
 			continue
 		fi
@@ -338,10 +339,10 @@ while true; do
 		fi
 		builtrepos="${builtrepos} ${r}"
 	done
-	if [ $rc -gt 0 ]; then 
-		continue;
-	fi
-	
+
+	export PATH="${BASE_PATH}:${DOWNLOAD_ROOT}/zbrew/bin"
+
+	testrepos=''	
 	for r in ${builtrepos}; do
 		cd "${BUILD_ROOT}/${r}"
 		SlackMsg "Test started for git repository: ${r}"
@@ -352,6 +353,13 @@ while true; do
 			SlackMsg "${status}"
 			continue
 		fi
+		testrepos="${testrepos} ${r}"
+	done
+
+	deployrepos=''	
+	for r in ${testrepos}; do
+		cd "${BUILD_ROOT}/${r}"
+		SlackMsg "Deploy started for git repository: ${r}"
 
 		paxfile="${r}_${timestamp}.pax"
 		artifact_url="https://dl.bintray.com/zbrew/zbrew/${paxfile}"
@@ -361,6 +369,17 @@ while true; do
 			SlackMsg "${status}"
 			continue
 		fi
+		deployrepos="${deployrepos} ${r}"
+	done
+
+	export ZBREW_HLQ="${ZBREW_DOWNLOAD_HLQ}"
+	export ZBREW_ZFSROOT="${ZBREW_DOWNLOAD_ZFSROOT}"
+	export ZBREW_WORKROOT="${ZBREW_DOWNLOAD_WORKROOT}"
+	export PATH="${BASE_PATH}:${DOWNLOAD_ROOT}/zbrew/bin"
+
+	for r in ${deployrepos}; do
+		cd "${BUILD_ROOT}/${r}"
+		SlackMsg "Download started for git repository: ${r}"
 
 		status=`RepoDownload ${r} ${paxfile} ${artifact_url}`
 		rc=$?
