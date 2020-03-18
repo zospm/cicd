@@ -32,4 +32,4 @@ fi
 mkdir -p "${BUILD_ROOT}"
 mkdir -p "${DEPLOY_ROOT}"
 
-export BASE_PATH="/usr/bin:/bin:/usr/sbin:/rsusr/zoau/bin:/rsusr/ported/bin:/rsusr/rocket/bin"
+export BASE_PATH=".:/usr/bin:/bin:/usr/sbin:/rsusr/zoau/bin:/rsusr/ported/bin:/rsusr/rocket/bin"

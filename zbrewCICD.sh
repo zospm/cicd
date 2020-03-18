@@ -340,8 +340,6 @@ while true; do
 		builtrepos="${builtrepos} ${r}"
 	done
 
-	export PATH="${BASE_PATH}:${DOWNLOAD_ROOT}/zbrew/bin"
-
 	testrepos=''	
 	for r in ${builtrepos}; do
 		cd "${BUILD_ROOT}/${r}"
