@@ -231,6 +231,12 @@ function RepoDownload {
 					SlackMsg "uninstall, install, configure ${prod}"
 				fi
 				# remove previous download builds
+				zbrew deconfigure ${prod} >"${out}" 2>&1
+				rc=$?
+				if [ $rc -gt 0 ]; then
+					echo "RepoDownload: Failed to deconfigure ${prod} from download. rc:$rc"
+					return $rc
+				fi
 				zbrew uninstall ${prod} >"${out}" 2>&1
 				rc=$?
 				if [ $rc -gt 0 ]; then
@@ -302,8 +308,10 @@ while true; do
 	cd "${BUILD_ROOT}"
 	timestamp=`date '+%Y%m%d%H%M'`
 
-	export ZBREW_HLQ="${ZBREW_BUILD_HLQ}"
-	export ZBREW_ZFSROOT="${ZBREW_BUILD_ZFSROOT}"
+	export ZBREW_SRC_HLQ="${ZBREW_BUILD_HLQ}S"
+	export ZBREW_TGT_HLQ="${ZBREW_BUILD_HLQ}T"
+	export ZBREW_SRC_ZFSROOT="${ZBREW_BUILD_ZFSROOT}S"
+	export ZBREW_TGT_ZFSROOT="${ZBREW_BUILD_ZFSROOT}T"
 	export ZBREW_WORKROOT="${ZBREW_BUILD_WORKROOT}"
 	export PATH="${BASE_PATH}:${BUILD_ROOT}/zbrew/bin"
 
@@ -370,15 +378,18 @@ while true; do
 		deployrepos="${deployrepos} ${r}"
 	done
 
-	export ZBREW_HLQ="${ZBREW_DOWNLOAD_HLQ}"
-	export ZBREW_ZFSROOT="${ZBREW_DOWNLOAD_ZFSROOT}"
+	export ZBREW_SRC_HLQ="${ZBREW_DOWNLOAD_HLQ}S"
+	export ZBREW_TGT_HLQ="${ZBREW_DOWNLOAD_HLQ}S"
+	export ZBREW_SRC_ZFSROOT="${ZBREW_DOWNLOAD_ZFSROOT}s"
+	export ZBREW_TGT_ZFSROOT="${ZBREW_DOWNLOAD_ZFSROOT}t"
 	export ZBREW_WORKROOT="${ZBREW_DOWNLOAD_WORKROOT}"
 	export PATH="${BASE_PATH}:${DOWNLOAD_ROOT}/zbrew/bin"
 
 	for r in ${deployrepos}; do
-		cd "${BUILD_ROOT}/${r}"
 		SlackMsg "Download started for git repository: ${r}"
 
+		paxfile="${r}_${timestamp}.pax"
+		artifact_url="https://dl.bintray.com/zbrew/zbrew/${paxfile}"
 		status=`RepoDownload ${r} ${paxfile} ${artifact_url}`
 		rc=$?
 		if [ $rc -gt 0 ]; then
