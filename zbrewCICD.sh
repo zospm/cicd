@@ -257,7 +257,7 @@ ve"
 					if [ $rc -eq 4 ]; then
                                           case $smpverbs in
                                           *$verb*)
-                                                  echo "RepoDownload: Warning for install/update ${prod} from download. rc:$rc"
+                                                  SlackMsg "RepoDownload: Warning for install/update ${prod} from download. rc:$rc"
                                                   rc=0
                                                   ;;
                                           *)
