@@ -243,19 +243,41 @@ function RepoDownload {
 					echo "RepoDownload: Failed to uninstall ${prod} from download. rc:$rc"
 					return $rc
 				fi
-				zbrew install ${prod} >"${out}" 2>&1
-				rc=$?
+				zbrew prodreq ${prod} >"${out}" 2>&1 
+				rc=$? 
+				zbrew smpconfig ${prod} >>"${out}" 2>&1 
+				rc=`expr ${rc} + $?` 
+				zbrew smpreceive ${prod} >>"${out}" 2>&1 
+				rc=`expr ${rc} + $?` 
+				zbrew smpcrdddef ${prod} >>"${out}" 2>&1 
+				rc=`expr ${rc} + $?` 
+				zbrew proddsalloc ${prod} >>"${out}" 2>&1 
+				rc=`expr ${rc} + $?` 
+				zbrew smpapplycheck ${prod} >>"${out}" 2>&1 
+				rc=`expr ${rc} + $?` 
+				zbrew smpapply ${prod} >>"${out}" 2>&1 
+				rc=`expr ${rc} + $?` 
+				  if [ $rc -eq 4 ]; then
+				  rc=`expr ${rc} - 4` 
+				  SlackMsg "RepoDownload: Warning for install/update ${prod} from download. rc:$rc" 
+				  SlackMsg "RepoDownload: Attempting re-install with -f" 
+				  zbrew -cf install ${prod} >>"$out" 2>&1 
+				  rc=`expr ${rc} + $?` 
+				 fi 
+				zbrew smpacceptcheck ${prod} >>"${out}" 2>&1 
+				rc=`expr ${rc} + $?` 
+				zbrew smpaccept ${prod} >>"${out}" 2>&1 
+				rc=`expr ${rc} + $?` 
+				zbrew smpreceiveptf ${prod} "MCSPTF2" >>"${out}" 2>&1 
+				rc=`expr ${rc} + $?` 
+				zbrew update ${prod} >>"${out}" 2>&1 
+				rc=`expr ${rc} + $?` 
+				zbrew archive ${prod} >>"${out}" 2>&1 
+				rc=`expr ${rc} + $?` 
+
 				if [ $rc -gt 0 ]; then
-					if [ $rc -eq 4 ]; then
-						SlackMsg "RepoDownload: Warning for install/update ${prod} from download. rc:$rc"
-						SlackMsg "RepoDownload: Attempting re-install with -f"
-						zbrew -cf install ${prod} >>"$out" 2>&1
-						rc=$?
-					fi
-					if [ $rc -gt 0 ]; then
-						echo "RepoDownload: Failed to install/update ${prod} from download. rc:$rc"
-						return $rc
-					fi
+					echo "RepoDownload: Failed to install/update ${prod} from download. rc:$rc"
+					return $rc
 				fi
 
 				zbrew configure ${prod} >"${out}" 2>&1
@@ -378,8 +400,8 @@ while true; do
 		deployrepos="${deployrepos} ${r}"
 	done
 
-	export ZBREW_SRC_HLQ="${ZBREW_DOWNLOAD_HLQ}S"
-	export ZBREW_TGT_HLQ="${ZBREW_DOWNLOAD_HLQ}S"
+	export ZBREW_SRC_HLQ="${ZBREW_DOWNLOAD_HLQ}S."
+	export ZBREW_TGT_HLQ="${ZBREW_DOWNLOAD_HLQ}T."
 	export ZBREW_SRC_ZFSROOT="${ZBREW_DOWNLOAD_ZFSROOT}s"
 	export ZBREW_TGT_ZFSROOT="${ZBREW_DOWNLOAD_ZFSROOT}t"
 	export ZBREW_WORKROOT="${ZBREW_DOWNLOAD_WORKROOT}"
