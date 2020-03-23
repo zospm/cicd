@@ -272,7 +272,7 @@ ve"
 				if [ "${prod}" = "zhw110" ]; then
 					zbrew smpreceiveptf ${prod} "MCSPTF2" >>"${out}" 2>&1
 					zbrew update ${prod} >>"${out}" 2>&1
-					zbrew archive ${prod} >>"${out}" 2>&1
+					rc=$?
 				fi
 
 				if [ $rc -gt 0 ]; then
@@ -281,7 +281,7 @@ ve"
 				fi
 
 				zbrew archive ${prod} >>"${out}" 2>&1 
-				rc=`expr ${rc} + $?` 
+				rc=$? 
 
 				if [ $rc -gt 0 ]; then
 					echo "RepoDownload: Failed to install/update ${prod} from download. rc:$rc"
