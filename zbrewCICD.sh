@@ -243,19 +243,49 @@ function RepoDownload {
 					echo "RepoDownload: Failed to uninstall ${prod} from download. rc:$rc"
 					return $rc
 				fi
-				zbrew install ${prod} >"${out}" 2>&1
-				rc=$?
-				if [ $rc -gt 0 ]; then
+				cat /dev/null >"${out}"
+				if [ "${prod}" = "zhw110" ]; then
+					install_verbs="prodreq smpconfig smpreceive smpcrdddef proddsalloc smpapplycheck smpapply smpacceptcheck smpaccept"
+				else
+					install_verbs="prodreq smpconfig smpreceive smpcrdddef proddsalloc smpapplycheck smpapply smpacceptcheck smpaccept archi
+ve"
+				fi
+				smpverbs="smpapplycheck smpapply smpacceptcheck smpaccept"
+				for verb in ${install_verbs}; do
+					zbrew ${verb} ${prod} >>"${out}" 2>&1
+					rc=$?
 					if [ $rc -eq 4 ]; then
-						SlackMsg "RepoDownload: Warning for install/update ${prod} from download. rc:$rc"
-						SlackMsg "RepoDownload: Attempting re-install with -f"
-						zbrew -cf install ${prod} >>"$out" 2>&1
-						rc=$?
+                                          case $smpverbs in
+                                          *$verb*)
+                                                  SlackMsg "RepoDownload: Warning for install/update ${prod} from download. rc:$rc"
+                                                  rc=0
+                                                  ;;
+                                          *)
+                                                  ;;
+                                          esac
 					fi
 					if [ $rc -gt 0 ]; then
-						echo "RepoDownload: Failed to install/update ${prod} from download. rc:$rc"
-						return $rc
+                                                echo "RepoDownload: Failed to install ${prod} from download. rc:$rc" 2>&1
+                                                return $rc
 					fi
+				done
+				if [ "${prod}" = "zhw110" ]; then
+					zbrew smpreceiveptf ${prod} "MCSPTF2" >>"${out}" 2>&1
+					zbrew update ${prod} >>"${out}" 2>&1
+					rc=$?
+				fi
+
+				if [ $rc -gt 0 ]; then
+					echo "RepoDownload: Failed to install/update ${prod} from download. rc:$rc"
+					return $rc
+				fi
+
+				zbrew archive ${prod} >>"${out}" 2>&1 
+				rc=$? 
+
+				if [ $rc -gt 0 ]; then
+					echo "RepoDownload: Failed to install/update ${prod} from download. rc:$rc"
+					return $rc
 				fi
 
 				zbrew configure ${prod} >"${out}" 2>&1
