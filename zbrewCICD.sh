@@ -244,7 +244,7 @@ function RepoDownload {
 					return $rc
 				fi
 				cat /dev/null >"${out}"
-				if [ "${prod}" = "zhw110" ]; then
+				if [ "${prod}" = "ZHW110" ]; then
 					install_verbs="prodreq smpconfig smpreceive smpcrdddef proddsalloc smpapplycheck smpapply smpacceptcheck smpaccept"
 				else
 					install_verbs="prodreq smpconfig smpreceive smpcrdddef proddsalloc smpapplycheck smpapply smpacceptcheck smpaccept archi
@@ -269,7 +269,7 @@ ve"
                                                 return $rc
 					fi
 				done
-				if [ "${prod}" = "zhw110" ]; then
+				if [ "${prod}" = "ZHW110" ]; then
 					zbrew smpreceiveptf ${prod} "MCSPTF2" >>"${out}" 2>&1
 					zbrew update ${prod} >>"${out}" 2>&1
 					rc=$?
