@@ -340,7 +340,7 @@ while true; do
 	rm -rf ${ZBREW_WORKROOT}/props
 	mkdir ${ZBREW_WORKROOT}/props
 	cp ${BUILD_ROOT}/zbrew/zbrewglobalprops_ADCDV24.json ${ZBREW_WORKROOT}/props
-	cp ${BUILD_ROOT}/zbrew-eqa/eqae20props_ADCEV24.json ${ZBREW_WORKROOT}/props
+	cp ${BUILD_ROOT}/zbrew-eqa/eqae20props_ADCDV24.json ${ZBREW_WORKROOT}/props
 
 	rc=0	
 	builtrepos=''
@@ -415,7 +415,7 @@ while true; do
 	rm -rf ${ZBREW_WORKROOT}/props
 	mkdir ${ZBREW_WORKROOT}/props
 	cp ${BUILD_ROOT}/zbrew/zbrewglobalprops_ADCDV24.json ${ZBREW_WORKROOT}/props
-	cp ${BUILD_ROOT}/zbrew-eqa/eqae20props_ADCEV24.json ${ZBREW_WORKROOT}/props
+	cp ${BUILD_ROOT}/zbrew-eqa/eqae20props_ADCDV24.json ${ZBREW_WORKROOT}/props
 
 	for r in ${deployrepos}; do
 		SlackMsg "Download started for git repository: ${r}"
