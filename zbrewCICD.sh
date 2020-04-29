@@ -337,11 +337,6 @@ while true; do
 	export ZBREW_WORKROOT="${ZBREW_BUILD_WORKROOT}"
 	export PATH="${BASE_PATH}:${BUILD_ROOT}/zbrew/bin"
 
-	rm -rf ${ZBREW_WORKROOT}/props
-	mkdir ${ZBREW_WORKROOT}/props
-	cp ${BUILD_ROOT}/zbrew/zbrewglobalprops_ADCDV24.json ${ZBREW_WORKROOT}/props
-	cp ${BUILD_ROOT}/zbrew-eqa/eqae20props_ADCDV24.json ${ZBREW_WORKROOT}/props
-
 	rc=0	
 	builtrepos=''
 	for r in ${REPO_LIST}; do
@@ -374,6 +369,11 @@ while true; do
 		fi
 		builtrepos="${builtrepos} ${r}"
 	done
+
+	rm -rf ${ZBREW_WORKROOT}/props
+	mkdir -p ${ZBREW_WORKROOT}/props
+	cp ${BUILD_ROOT}/zbrew/zbrewglobalprops_ADCDV24.json ${ZBREW_WORKROOT}/props/zbrewglobalprops.json
+	cp ${BUILD_ROOT}/zbrew-eqa/eqae20props_ADCDV24.json ${ZBREW_WORKROOT}/props/eqae20props.json
 
 	testrepos=''	
 	for r in ${builtrepos}; do
@@ -414,8 +414,8 @@ while true; do
 
 	rm -rf ${ZBREW_WORKROOT}/props
 	mkdir ${ZBREW_WORKROOT}/props
-	cp ${BUILD_ROOT}/zbrew/zbrewglobalprops_ADCDV24.json ${ZBREW_WORKROOT}/props
-	cp ${BUILD_ROOT}/zbrew-eqa/eqae20props_ADCDV24.json ${ZBREW_WORKROOT}/props
+	cp ${BUILD_ROOT}/zbrew/zbrewglobalprops_ADCDV24.json ${ZBREW_WORKROOT}/props/zbrewglobalprops.json
+	cp ${BUILD_ROOT}/zbrew-eqa/eqae20props_ADCDV24.json ${ZBREW_WORKROOT}/props/eqae20props.json
 
 	for r in ${deployrepos}; do
 		SlackMsg "Download started for git repository: ${r}"
