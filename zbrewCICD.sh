@@ -245,10 +245,10 @@ function RepoDownload {
 				fi
 				cat /dev/null >"${out}"
 				if [ "${prod}" = "ZHW110" ]; then
+
 					install_verbs="prodreq smpconfig smpreceive smpcrdddef proddsalloc smpapplycheck smpapply smpacceptcheck smpaccept"
 				else
-					install_verbs="prodreq smpconfig smpreceive smpcrdddef proddsalloc smpapplycheck smpapply smpacceptcheck smpaccept archi
-ve"
+					install_verbs="prodreq smpconfig smpreceive smpcrdddef proddsalloc smpapplycheck smpapply smpacceptcheck smpaccept archive"
 				fi
 				smpverbs="smpapplycheck smpapply smpacceptcheck smpaccept"
 				for verb in ${install_verbs}; do
@@ -263,6 +263,7 @@ ve"
                                           *)
                                                   ;;
                                           esac
+
 					fi
 					if [ $rc -gt 0 ]; then
                                                 echo "RepoDownload: Failed to install ${prod} from download. rc:$rc" 2>&1
@@ -283,24 +284,25 @@ ve"
 				zbrew archive ${prod} >>"${out}" 2>&1 
 				rc=$? 
 
+
 				if [ $rc -gt 0 ]; then
 					echo "RepoDownload: Failed to install/update ${prod} from download. rc:$rc"
 					return $rc
 				fi
 
-				zbrew configure ${prod} >"${out}" 2>&1
+				zbrew configure ${prod} >>"${out}" 2>&1
 				rc=$?
 				if [ $rc -gt 0 ]; then
 					echo "RepoDownload: Failed to configure ${prod} from download. rc:$rc"
 					return $rc
 				fi
-				zbrew deconfigure ${prod} >"${out}" 2>&1
+				zbrew deconfigure ${prod} >>"${out}" 2>&1
 				rc=$?
 				if [ $rc -gt 0 ]; then
 					echo "RepoDownload: Failed to deconfigure ${prod} from download. rc:$rc"
 					return $rc
 				fi
-				zbrew uninstall ${prod} >"${out}" 2>&1
+				zbrew uninstall ${prod} >>"${out}" 2>&1
 			done
 			rm -f "${out}"
 		fi
@@ -314,6 +316,7 @@ ve"
 # This two-step approach is required because zbrew and zbrew-zhw have dependencies on each other.
 #
 first=true
+set -x
 while true; do
 	
 	if $first; then
@@ -372,11 +375,16 @@ while true; do
 		status=`RepoBuild ${r}`
 		rc=$?
 		if [ $rc -gt 0 ]; then
-			SlackMsg "${status}"
+			SlackMsg "*${status}*"
 			continue
 		fi
 		builtrepos="${builtrepos} ${r}"
 	done
+
+	rm -rf ${ZBREW_WORKROOT}/props
+	mkdir -p ${ZBREW_WORKROOT}/props
+	cp ${BUILD_ROOT}/zbrew/zbrewglobalprops_ADCDV24.json ${ZBREW_WORKROOT}/props/zbrewglobalprops.json
+	cp ${BUILD_ROOT}/zbrew-eqa/eqae20props_ADCDV24.json ${ZBREW_WORKROOT}/props/eqae20props.json
 
 	testrepos=''	
 	for r in ${builtrepos}; do
@@ -386,7 +394,7 @@ while true; do
 		status=`RepoTest ${r}`
 		rc=$?
 		if [ $rc -gt 0 ]; then
-			SlackMsg "${status}"
+			SlackMsg "*${status}*"
 			continue
 		fi
 		testrepos="${testrepos} ${r}"
@@ -402,7 +410,7 @@ while true; do
 		status=`RepoDeploy ${r} ${timestamp} ${hash} ${paxfile} ${artifact_url}`
 		rc=$?
 		if [ $rc -gt 0 ]; then
-			SlackMsg "${status}"
+			SlackMsg "*${status}*"
 			continue
 		fi
 		deployrepos="${deployrepos} ${r}"
@@ -415,6 +423,11 @@ while true; do
 	export ZBREW_WORKROOT="${ZBREW_DOWNLOAD_WORKROOT}"
 	export PATH="${BASE_PATH}:${DOWNLOAD_ROOT}/zbrew/bin"
 
+	rm -rf ${ZBREW_WORKROOT}/props
+	mkdir ${ZBREW_WORKROOT}/props
+	cp ${BUILD_ROOT}/zbrew/zbrewglobalprops_ADCDV24.json ${ZBREW_WORKROOT}/props/zbrewglobalprops.json
+	cp ${BUILD_ROOT}/zbrew-eqa/eqae20props_ADCDV24.json ${ZBREW_WORKROOT}/props/eqae20props.json
+
 	for r in ${deployrepos}; do
 		SlackMsg "Download started for git repository: ${r}"
 
@@ -423,7 +436,7 @@ while true; do
 		status=`RepoDownload ${r} ${paxfile} ${artifact_url}`
 		rc=$?
 		if [ $rc -gt 0 ]; then
-			SlackMsg "${status}"
+			SlackMsg "*${status}*"
 		else
 			SlackMsg "Build, test, deploy, download of ${r} passed. Code deployed to: ${artifact_url}"
 		fi
