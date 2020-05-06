@@ -316,7 +316,6 @@ function RepoDownload {
 # This two-step approach is required because zbrew and zbrew-zhw have dependencies on each other.
 #
 first=true
-set -x
 while true; do
 	
 	if $first; then
