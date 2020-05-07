@@ -342,8 +342,8 @@ while true; do
 
 	export ZBREW_SRC_HLQ="${ZBREW_BUILD_HLQ}S."
 	export ZBREW_TGT_HLQ="${ZBREW_BUILD_HLQ}T."
-	export ZBREW_SRC_ZFSROOT="${ZBREW_BUILD_ZFSROOT}S"
-	export ZBREW_TGT_ZFSROOT="${ZBREW_BUILD_ZFSROOT}T"
+	export ZBREW_SRC_ZFSROOT="${ZBREW_BUILD_ZFSROOT}s/"
+	export ZBREW_TGT_ZFSROOT="${ZBREW_BUILD_ZFSROOT}t/"
 	export ZBREW_WORKROOT="${ZBREW_BUILD_WORKROOT}"
 	export PATH="${BASE_PATH}:${BUILD_ROOT}/zbrew/bin"
 
@@ -383,7 +383,7 @@ while true; do
 	rm -rf ${ZBREW_WORKROOT}/props
 	mkdir -p ${ZBREW_WORKROOT}/props
 	cp ${BUILD_ROOT}/zbrew/zbrewglobalprops_ADCDV24.json ${ZBREW_WORKROOT}/props/zbrewglobalprops.json
-	cp ${BUILD_ROOT}/zbrew-eqa/eqae20props_ADCDV24.json ${ZBREW_WORKROOT}/props/eqae20props.json
+	cp ${BUILD_ROOT}/zbrew-eqa/eqae20/eqae20props_ADCDV24.json ${ZBREW_WORKROOT}/props/eqae20props.json
 
 	testrepos=''	
 	for r in ${builtrepos}; do
@@ -417,15 +417,15 @@ while true; do
 
 	export ZBREW_SRC_HLQ="${ZBREW_DOWNLOAD_HLQ}S."
 	export ZBREW_TGT_HLQ="${ZBREW_DOWNLOAD_HLQ}T."
-	export ZBREW_SRC_ZFSROOT="${ZBREW_DOWNLOAD_ZFSROOT}s"
-	export ZBREW_TGT_ZFSROOT="${ZBREW_DOWNLOAD_ZFSROOT}t"
+	export ZBREW_SRC_ZFSROOT="${ZBREW_DOWNLOAD_ZFSROOT}s/"
+	export ZBREW_TGT_ZFSROOT="${ZBREW_DOWNLOAD_ZFSROOT}t/"
 	export ZBREW_WORKROOT="${ZBREW_DOWNLOAD_WORKROOT}"
 	export PATH="${BASE_PATH}:${DOWNLOAD_ROOT}/zbrew/bin"
 
 	rm -rf ${ZBREW_WORKROOT}/props
 	mkdir ${ZBREW_WORKROOT}/props
 	cp ${BUILD_ROOT}/zbrew/zbrewglobalprops_ADCDV24.json ${ZBREW_WORKROOT}/props/zbrewglobalprops.json
-	cp ${BUILD_ROOT}/zbrew-eqa/eqae20props_ADCDV24.json ${ZBREW_WORKROOT}/props/eqae20props.json
+	cp ${BUILD_ROOT}/zbrew-eqa/eqae20/eqae20props_ADCDV24.json ${ZBREW_WORKROOT}/props/eqae20props.json
 
 	for r in ${deployrepos}; do
 		SlackMsg "Download started for git repository: ${r}"
