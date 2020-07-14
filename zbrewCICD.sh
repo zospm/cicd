@@ -214,7 +214,7 @@ function RepoDownload {
 	DOWNLOAD_ZBREW="${DOWNLOAD_ROOT}/zbrew/bin/zbrew"
 	if [ "${repo}" = "zbrew" ]; then
 		expected="ZHW110 1234-AB5 ZBREW Hello World Unit Test Software V1.1"
-		result=`zbrew search zhw`
+		result=`zbrew search zhw 2>&1` 
 		if [ "${result}" != "${expected}" ]; then
 			echo "RepoDownload: zbrew failed to run search for zhw. Results: ${result}"
 			return 16
