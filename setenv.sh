@@ -4,23 +4,23 @@
 #
 export GIT_SERVER="github.com"
 export GIT_OWNER="git"
-export GIT_USER="zbrewdev"
-export REPO_LIST="zbrew zbrew-zhw zbrew-eqa zbrew-igy zbrew-bgz zbrew-fek zbrew-git zbrew-fel zbrew-huh zbrew-zwe"
+export GIT_USER="zospm"
+export REPO_LIST="zospm zospm-zhw zospm-eqa zospm-igy zospm-bgz zospm-fek zospm-git zospm-fel zospm-huh zospm-zwe"
 export DEPLOY_SERVER="api.bintray.com"
 export DEPLOY_USER="fultonm"
-export DEPLOY_REPO_PREFIX="content/zbrew/zbrew/"
+export DEPLOY_REPO_PREFIX="content/zospm/zospm/"
 export DEPLOY_REPO_SUFFIX="/"
-export BUILD_ROOT="${HOME}/zbrew-build"
-export DEPLOY_ROOT="${HOME}/zbrew-deploy"
-export DOWNLOAD_ROOT="${HOME}/zbrew-download"
-export ZBREW_ZOS240_CSI='MVS.GLOBAL.CSI'
-export ZBREW_CEE240_CSI='MVS.GLOBAL.CSI'
-export ZBREW_BUILD_HLQ='ZBRB'
-export ZBREW_BUILD_ZFSROOT='/zbrb'
-export ZBREW_BUILD_WORKROOT="${BUILD_ROOT}"
-export ZBREW_DOWNLOAD_HLQ='ZBRD'
-export ZBREW_DOWNLOAD_ZFSROOT='/zbrd'
-export ZBREW_DOWNLOAD_WORKROOT="${DOWNLOAD_ROOT}"
+export BUILD_ROOT="${HOME}/zospm-build"
+export DEPLOY_ROOT="${HOME}/zospm-deploy"
+export DOWNLOAD_ROOT="${HOME}/zospm-download"
+export ZOSPM_ZOS240_CSI='MVS.GLOBAL.CSI'
+export ZOSPM_CEE240_CSI='MVS.GLOBAL.CSI'
+export ZOSPM_BUILD_HLQ='ZBRB'
+export ZOSPM_BUILD_ZFSROOT='/zbrb'
+export ZOSPM_BUILD_WORKROOT="${BUILD_ROOT}"
+export ZOSPM_DOWNLOAD_HLQ='ZBRD'
+export ZOSPM_DOWNLOAD_ZFSROOT='/zbrd'
+export ZOSPM_DOWNLOAD_WORKROOT="${DOWNLOAD_ROOT}"
 
 if [ -z "${DEPLOY_API_KEY}" ]; then
         echo "Need to export DEPLOY_API_KEY to deploy to ${DEPLOY_SERVER}"
