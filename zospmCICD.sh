@@ -18,28 +18,41 @@ function SlackMsg {
 }
 
 function RepoStatus {
-	repo=$1
-	gitout=gitfetch${repo}.out
-	if [ -d .git ]; then
-		git fetch >"${gitout}" 2>&1
-		if [ $? -eq 0 ]; then
-			rm -f ${gitout}
-		fi
-		REMOTE=`git rev-parse @{u}`
-		LOCAL=`git rev-parse HEAD`
-
-		if [ $LOCAL = $REMOTE ]; then
-		    echo "CURRENT"
+	sw=$1
+	repo=$2
+	gitout=gitrefresh.$sw.out
+	giterr=gitrefresh.$sw.err
+ 	if ! [ -d ${repo}/.git ]; then
+ 		git clone "${GIT_OWNER}@${GIT_SERVER}:${GIT_USER}/${repo}.git" >"${gitout}" 2>&1
+		rc=$?
+		if [ $rc -gt 0 ]; then
+			cat ${gitout} >&2
+			echo "ERROR"
+			return $rc
 		else
-		    echo "PULL"
-		fi
-	else
-		cd ../
-		git clone "${GIT_OWNER}@${GIT_SERVER}:${GIT_USER}/${repo}.git" >"${gitout}" 2>&1
-		if [ $? -eq 0 ]; then
 			rm -f ${gitout}
+			echo "PULL"
+			return 0
 		fi
-		cd ${repo}
+	fi  
+	(
+		export PATH=$BASE_SRC_ROOT/zospm/bin:$PATH; 
+		export ZOSPM_REPOROOT=$BUILD_ROOT;
+		zospm -w $BASE_SRC_WORKROOT refresh ${sw} >${gitout} 2>${giterr}
+	)
+	rc=$?
+	if [ $rc -gt 0 ]; then
+		echo "ERROR"
+		cat ${gitout} >&2
+		cat ${giterr} >&2
+		return $rc
+	fi
+	grep -q 'Already up-to-date' ${gitout}
+	rc=$?
+	rm -f ${gitout} ${giterr}
+	if [ $rc -eq 0 ]; then
+		echo "CURRENT"
+	else
 		echo "PULL"
 	fi
 	return 0
@@ -47,19 +60,10 @@ function RepoStatus {
 
 function RepoBuild {
 	repo=$1
-	gitout=gitpull.out
 	out="RepoBuild.results"
 
 	if ${verbose}; then
 		SlackMsg "RepoBuild ${repo}"
-	fi
-	git pull "${GIT_OWNER}@${GIT_SERVER}:${GIT_USER}/${repo}.git" >"${gitout}" 2>&1
-	rc=$?
-	if [ ${rc} -ne 0 ]; then
-		echo "RepoBuild: git pull ${repo} failed with rc:$rc"
-		return ${rc}
-	else
-		rm -f "${gitout}"
 	fi
 
 	./build.sh >${out} 2>&1
@@ -88,9 +92,9 @@ function RepoTest {
 }
 
 function RepoDeploy {
-	repo=$1
-	timestamp=$2
-	hash=$3
+	sw=$1
+	repo=$2
+	timestamp=$3
 	paxfile=$4
 	artifact_url=$5
 
@@ -174,42 +178,27 @@ function RepoDeploy {
 }
 
 function RepoDownload {
-	repo=$1
-        paxfile=$2
- 	artifact_url=$3
+	sw=$1
+	repo=$2
+        paxfile=$3
+ 	artifact_url=$4
 
 	curlout="curl.out"
 	paxout="pax.out"
 	out="RepoDownload.out"
 	
 	if ${verbose}; then
-		SlackMsg "RepoDownload ${repo}"
+		SlackMsg "RepoDownload ${sw}"
 	fi
 	rm -rf "${DOWNLOAD_ROOT}/${repo}"
-        mkdir -p "${DOWNLOAD_ROOT}/${repo}"
-	rc=$?
-        if [ ${rc} -gt 0 ]; then
-	        echo "RepoDownload: Unable to create deploy directory: ${DOWNLOAD_ROOT}/${repo}. rc:$rc"
-	        return ${rc}
-	fi
-	cd "${DOWNLOAD_ROOT}/${repo}"
-	curl -ks -u${DEPLOY_USER}:${DEPLOY_API_KEY} ${artifact_url} -o ${paxfile} >${curlout} 2>&1
-	rc=$?
-        if [ ${rc} -gt 0 ]; then
-	        echo "RepoDownload: Unable to download: ${DOWNLOAD_ROOT}/${repo}/${paxfile}"
-	        return ${rc}
-	else
-		rm -f "${curlout}"
-	fi
-	pax -rf ${paxfile} >${paxout} 2>&1
-	rc=$?
-        if [ ${rc} -gt 0 ]; then
-	        echo "RepoDownload: Unable to unpax: ${DOWNLOAD_ROOT}/${repo}/${paxfile}. rc:$rc"
-	        return ${rc}
-	else
-		rm -f "${paxout}"
-		rm -f "${paxfile}"
-	fi
+
+	binout=binrefresh.out
+	binerr=binrefresh.err
+	(
+		export PATH=$BASE_BIN_ROOT/zospm/bin:$PATH; 
+		export ZOSPM_REPOROOT=$DOWNLOAD_ROOT;
+		zospm -w $BASE_BIN_WORKROOT refresh ${sw} >${binout} 2>${binerr}
+	)
 
 	DOWNLOAD_ZOSPM="${DOWNLOAD_ROOT}/zospm/bin/zospm"
 	if [ "${repo}" = "zospm" ]; then
@@ -223,8 +212,7 @@ function RepoDownload {
 		fi
 	else
 		if [ -f ${DOWNLOAD_ZOSPM} ]; then
-			suffix=${repo##*-}
-			prods=`zospm search ${suffix} | awk '{ print $1; }'`
+			prods=`zospm search ${sw} | awk '{ print $1; }'`
 
 			for prod in ${prods}; do
 				if ${verbose}; then
@@ -349,17 +337,21 @@ while true; do
 
 	rc=0	
 	builtrepos=''
-	for r in ${REPO_LIST}; do
+	for sr in ${REPO_LIST}; do
+		if [ "${sr}" = "zospm" ]; then
+			r='zospm'
+		else 
+			r="zospm-${sr}"
+		fi
 		mkdir -p "${BUILD_ROOT}/${r}"
 		rc=$?
 		if [ ${rc} -gt 0 ]; then
 			echo "Unable to	create repository directory: ${BUILD_ROOT}/${r}"
 			exit ${rc}
 		fi
-		cd "${BUILD_ROOT}/${r}"
-		status=`RepoStatus ${r}`
+		cd "${BUILD_ROOT}"
+		status=`RepoStatus ${sr} ${r}`
 	
-		log="cicd.log"
 		if [ ${status} = "CURRENT" ]; then
 			continue
 		fi
@@ -367,26 +359,30 @@ while true; do
 			echo "Repository ${r} is out of sync. Investigate!"
 			continue
 		fi
-		hash=`git ls-remote -q "${GIT_OWNER}@${GIT_SERVER}:${GIT_USER}/${r}"  | awk ' { if ($2 == "HEAD") { print $1; }}'`
-		echo "Build repository: ${r} (${hash})"
+		echo "Build repository: ${r}"
 		SlackMsg "Build started for git repository: ${r}"
 
+		cd "${BUILD_ROOT}/${r}"
 		status=`RepoBuild ${r}`
 		rc=$?
 		if [ $rc -gt 0 ]; then
 			SlackMsg "*${status}*"
 			continue
 		fi
-		builtrepos="${builtrepos} ${r}"
+		builtrepos="${builtrepos} ${sr}"
 	done
 
 	rm -rf ${ZOSPM_WORKROOT}/props
 	mkdir -p ${ZOSPM_WORKROOT}/props
 	cp ${BUILD_ROOT}/zospm/zospmglobalprops_ADCDV24.json ${ZOSPM_WORKROOT}/props/zospmglobalprops.json
-	cp ${BUILD_ROOT}/zospm-eqa/eqae20/eqae20props_ADCDV24.json ${ZOSPM_WORKROOT}/props/eqae20props.json
 
 	testrepos=''	
-	for r in ${builtrepos}; do
+	for sr in ${builtrepos}; do
+		if [ "${sr}" = "zospm" ]; then
+			r='zospm'
+		else 
+			r="zospm-${sr}"
+		fi
 		cd "${BUILD_ROOT}/${r}"
 		SlackMsg "Test started for git repository: ${r}"
 
@@ -396,23 +392,28 @@ while true; do
 			SlackMsg "*${status}*"
 			continue
 		fi
-		testrepos="${testrepos} ${r}"
+		testrepos="${testrepos} ${sr}"
 	done
 
 	deployrepos=''	
-	for r in ${testrepos}; do
+	for sr in ${testrepos}; do
+		if [ "${sr}" = "zospm" ]; then
+			r='zospm'
+		else 
+			r="zospm-${sr}"
+		fi
 		cd "${BUILD_ROOT}/${r}"
 		SlackMsg "Deploy started for git repository: ${r}"
 
 		paxfile="${r}_${timestamp}.pax"
 		artifact_url="https://dl.bintray.com/zospm/zospm/${paxfile}"
-		status=`RepoDeploy ${r} ${timestamp} ${hash} ${paxfile} ${artifact_url}`
+		status=`RepoDeploy ${sr} ${r} ${timestamp} ${paxfile} ${artifact_url}`
 		rc=$?
 		if [ $rc -gt 0 ]; then
 			SlackMsg "*${status}*"
 			continue
 		fi
-		deployrepos="${deployrepos} ${r}"
+		deployrepos="${deployrepos} ${sr}"
 	done
 
 	export ZOSPM_SRC_HLQ="${ZOSPM_DOWNLOAD_HLQ}S."
@@ -425,14 +426,18 @@ while true; do
 	rm -rf ${ZOSPM_WORKROOT}/props
 	mkdir ${ZOSPM_WORKROOT}/props
 	cp ${BUILD_ROOT}/zospm/zospmglobalprops_ADCDV24.json ${ZOSPM_WORKROOT}/props/zospmglobalprops.json
-	cp ${BUILD_ROOT}/zospm-eqa/eqae20/eqae20props_ADCDV24.json ${ZOSPM_WORKROOT}/props/eqae20props.json
 
-	for r in ${deployrepos}; do
+	for sr in ${deployrepos}; do
+		if [ "${sr}" = "zospm" ]; then
+			r='zospm'
+		else 
+			r="zospm-${sr}"
+		fi
 		SlackMsg "Download started for git repository: ${r}"
 
 		paxfile="${r}_${timestamp}.pax"
 		artifact_url="https://dl.bintray.com/zospm/zospm/${paxfile}"
-		status=`RepoDownload ${r} ${paxfile} ${artifact_url}`
+		status=`RepoDownload ${sr} ${r} ${paxfile} ${artifact_url}`
 		rc=$?
 		if [ $rc -gt 0 ]; then
 			SlackMsg "*${status}*"
