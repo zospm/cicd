@@ -5,7 +5,7 @@
 export GIT_SERVER="github.com"
 export GIT_OWNER="git"
 export GIT_USER="zospm"
-export REPO_LIST="zospm zhw"
+export REPO_LIST="zospm zhw git fek fel igy zwe eqa bgz huh"
 export DEPLOY_SERVER="api.bintray.com"
 export DEPLOY_USER="fultonm"
 export DEPLOY_REPO_PREFIX="content/zospm/zospm/"
